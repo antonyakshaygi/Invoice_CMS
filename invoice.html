@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Invoice Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoVBL5gI9kDXrd3NBGxuJEwingUdYQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" xintegrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .invoice-preview {
+            font-family: 'Times New Roman', Times, serif;
+            position: relative; /* Needed for absolute positioning of logo */
+        }
+        .preview-table th, .preview-table td {
+            border: 1px solid #000;
+        }
+        .logo-container {
+            /* Removed absolute positioning here as it's now within a flex container */
+            width: 120px; /* Adjust as needed */
+            height: 60px; /* Adjust as needed */
+            overflow: hidden;
+            margin-bottom: 8px; /* Space between logo and text below it */
+        }
+        .logo-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .signature-seal-container {
+            position: relative;
+            height: 100px; /* Provide space for images */
+            margin-top: 2rem;
+        }
+        .signature-image {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 150px; /* Adjust as needed */
+            height: 70px; /* Adjust as needed */
+            object-fit: contain;
+        }
+        .seal-image {
+            position: absolute;
+            bottom: 0;
+            right: 180px; /* Position to the left of signature */
+            width: 80px; /* Adjust as needed */
+            height: 80px; /* Adjust as needed */
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto p-4 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Interactive Invoice Generator</h1>
+            <p class="text-gray-600 mt-2">Edit the details in the form on the left to see a live update on the right. Click "Generate PDF" to download.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <section id="invoice-form" class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="space-y-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Your Company Details</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="sm:col-span-2">
+                                <label for="companyName" class="block text-sm font-medium text-gray-600">Company Name</label>
+                                <input type="text" id="companyName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="companyAddress1" class="block text-sm font-medium text-gray-600">Address Line 1</label>
+                                <input type="text" id="companyAddress1" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="companyAddress2" class="block text-sm font-medium text-gray-600">Address Line 2</label>
+                                <input type="text" id="companyAddress2" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                             <div>
+                                <label for="companyCity" class="block text-sm font-medium text-gray-600">City</label>
+                                <input type="text" id="companyCity" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="companyPincode" class="block text-sm font-medium text-gray-600">Pincode</label>
+                                <input type="text" id="companyPincode" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="companyGstin" class="block text-sm font-medium text-gray-600">GSTIN/UIN</label>
+                                <input type="text" id="companyGstin" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="companyState" class="block text-sm font-medium text-gray-600">State Name & Code</label>
+                                <input type="text" id="companyState" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Buyer & Invoice Details</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="buyerName" class="block text-sm font-medium text-gray-600">Buyer Name</label>
+                                <input type="text" id="buyerName" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                             <div>
+                                <label for="buyerMobile" class="block text-sm font-medium text-gray-600">Buyer Mobile</label>
+                                <input type="text" id="buyerMobile" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="invoiceNo" class="block text-sm font-medium text-gray-600">Invoice No.</label>
+                                <input type="text" id="invoiceNo" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                             <div>
+                                <label for="invoiceDate" class="block text-sm font-medium text-gray-600">Invoice Date</label>
+                                <input type="text" id="invoiceDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                            <div>
+                                <label for="orderNo" class="block text-sm font-medium text-gray-600">Buyer's Order No.</label>
+                                <input type="text" id="orderNo" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                             <div>
+                                <label for="orderDate" class="block text-sm font-medium text-gray-600">Order Date</label>
+                                <input type="text" id="orderDate" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-700 border-b pb-2 mb-4">Services / Items</h2>
+                        <div id="items-container" class="space-y-4">
+                            <!-- Items will be injected here by JS -->
+                        </div>
+                        <button id="add-item-btn" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            + Add Item
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Preview Section -->
+            <section class="bg-white p-2 rounded-lg shadow-lg">
+                <div id="invoice-preview" class="invoice-preview w-full h-full overflow-auto p-8 border border-gray-200">
+                    <header class="grid grid-cols-2 gap-4 mb-8">
+                        <div>
+                            <h2 id="preview-companyName" class="font-bold text-lg"></h2>
+                            <p id="preview-companyAddress1"></p>
+                            <p id="preview-companyAddress2"></p>
+                            <p id="preview-companyCity"></p>
+                            <p id="preview-companyPincode" class="font-bold"></p>
+                        </div>
+                        <div class="text-right text-xs flex flex-col items-end">
+                             <div class="logo-container">
+                                <img id="companyLogo" src="https://www.linkedin.com/showcase/chitti-official/" class="logo-image">
+                            </div>
+                             <p><strong>Invoice No.</strong> <span id="preview-invoiceNo"></span></p>
+                             <p><strong>Delivery Note:</strong></p>
+                             <p><strong>GSTIN/UIN:</strong> <span id="preview-companyGstin"></span></p>
+                             <p><strong>State Name:</strong> <span id="preview-companyState"></span></p>
+                             <p><strong>Supplier's Ref.:</strong></p>
+                             <p><strong>Dated:</strong> <span id="preview-invoiceDate"></span></p>
+                        </div>
+                    </header>
+
+                    <section class="grid grid-cols-2 gap-4 border-t border-b border-black py-4 mb-8 text-xs">
+                         <div>
+                            <p class="font-bold">Buyer</p>
+                            <p id="preview-buyerName"></p>
+                            <p>Mobile: <span id="preview-buyerMobile"></span></p>
+                            <p>Buyer's Order No. <span id="preview-orderNo"></span></p>
+                            <p>Despatch Document No. </p>
+                         </div>
+                         <div class="text-right">
+                             <p>Mode/Terms of Payment: </p>
+                             <p>Other Reference(s): </p>
+                             <p>Dated: <span id="preview-orderDate"></span></p>
+                             <p>Delivery Note Date: </p>
+                             <p>Destination: </p>
+                             <p>Despatched through: </p>
+                         </div>
+                    </section>
+
+                    <table class="w-full border-collapse preview-table text-sm mb-4">
+                        <thead>
+                            <tr class="text-center">
+                                <th class="w-1/12 p-1">S. No.</th>
+                                <th class="w-6/12 p-1 text-left">Description of Services</th>
+                                <th class="w-1/12 p-1">Quantity</th>
+                                <th class="w-2/12 p-1">Rate Per</th>
+                                <th class="w-2/12 p-1">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="preview-items-body">
+                            <!-- Preview items will be injected here by JS -->
+                        </tbody>
+                        <tfoot>
+                             <tr>
+                                 <td colspan="3" class="border-0"></td>
+                                 <td class="p-1 text-center font-bold">Total</td>
+                                 <td id="preview-total-amount" class="p-1 text-center font-bold"></td>
+                             </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="text-sm">
+                        <p class="font-bold">Amount Chargeable (in words) E. & O. E</p>
+                        <p id="preview-amount-in-words"></p>
+                    </div>
+
+                    <footer class="mt-16 text-right text-sm">
+                        <div class="signature-seal-container">
+                            <img src="C:\Users\LENOVO\Pictures\LMES SIGN.png" class="signature-image">
+                            <img src="C:\Users\LENOVO\Pictures\LMES SEAL.png" alt="Seal Placeholder" class="seal-image">
+                        </div>
+                        <div class="inline-block text-center">
+                             <p class="font-bold">for <span id="preview-companyName-footer"></span></p>
+                             <p class="border-t border-black pt-1">Authorized Signatory</p>
+                        </div>
+                    </footer>
+                </div>
+            </section>
+        </main>
+
+        <div class="text-center mt-8">
+            <button id="generate-pdf-btn" class="px-8 py-3 bg-green-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-green-700 transition-colors">
+                Generate PDF
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const productOptions = ["Chitti Maker School", "CA", "Uptor FSM", "Uptor FSD", "Uptor Gen AI", "Neet Jee"];
+
+            const state = {
+                company: {
+                    name: "LMES Academy Pvt Ltd",
+                    address1: "NO: 113/1, 2nd Floor Block B1",
+                    address2: "200ft Radial Road, Zamin",
+                    city: "Pallavaram",
+                    pincode: "CHENNAI 600 117",
+                    gstin: "33AADCL2997D1ZJ",
+                    state: "Tamil Nadu, Code: 33"
+                },
+                buyer: {
+                    name: "Zoorzubaidha",
+                    mobile: "9597786477"
+                },
+                invoice: {
+                    no: "LAI/24-25/416",
+                    date: "13-07-2025",
+                    orderNo: "Chitti",
+                    orderDate: "13-07-2025"
+                },
+                items: [
+                    { description: 'Chitti Maker School', quantity: 1, rate: 45000 }
+                ],
+                taxRate: 0.18 // 18%
+            };
+
+            const form = document.getElementById('invoice-form');
+            const itemsContainer = document.getElementById('items-container');
+            const companyLogo = document.getElementById('companyLogo');
+
+            function toWords(num) {
+                const a = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+                const b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+                const number = parseFloat(num).toFixed(2).split(".");
+                const main = parseInt(number[0]);
+                const decimal = parseInt(number[1]);
+                if ((num = num.toString()).length > 9) return 'overflow';
+                const n = ('000000000' + main).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+                if (!n) return;
+                let str = '';
+                str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'crore ' : '';
+                str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'lakh ' : '';
+                str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'thousand ' : '';
+                str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'hundred ' : '';
+                str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+
+                if (decimal > 0) {
+                     str += ' and ' + ((a[Number(decimal)] || b[decimal[0]] + ' ' + a[decimal[1]])) + ' paise';
+                }
+                
+                return 'Rupees ' + str.trim().charAt(0).toUpperCase() + str.trim().slice(1) + ' Only';
+            }
+
+            function updatePreview() {
+                document.getElementById('preview-companyName').textContent = state.company.name;
+                document.getElementById('preview-companyAddress1').textContent = state.company.address1;
+                document.getElementById('preview-companyAddress2').textContent = state.company.address2;
+                document.getElementById('preview-companyCity').textContent = state.company.city;
+                document.getElementById('preview-companyPincode').textContent = state.company.pincode;
+                document.getElementById('preview-companyGstin').textContent = state.company.gstin;
+                document.getElementById('preview-companyState').textContent = state.company.state;
+                document.getElementById('preview-companyName-footer').textContent = state.company.name;
+
+                document.getElementById('preview-buyerName').textContent = state.buyer.name;
+                document.getElementById('preview-buyerMobile').textContent = state.buyer.mobile;
+
+                document.getElementById('preview-invoiceNo').textContent = state.invoice.no;
+                document.getElementById('preview-invoiceDate').textContent = state.invoice.date;
+                document.getElementById('preview-orderNo').textContent = state.invoice.orderNo;
+                document.getElementById('preview-orderDate').textContent = state.invoice.orderDate;
+
+                const itemsBody = document.getElementById('preview-items-body');
+                itemsBody.innerHTML = '';
+                let totalInclusiveGST = 0;
+                let totalTaxableValue = 0;
+
+                state.items.forEach((item, index) => {
+                    const amountInclusiveGST = item.quantity * item.rate;
+                    const taxableValue = amountInclusiveGST / (1 + state.taxRate);
+                    
+                    totalInclusiveGST += amountInclusiveGST;
+                    totalTaxableValue += taxableValue;
+
+                    const row = `
+                        <tr class="text-center">
+                            <td class="p-1">${index + 1}</td>
+                            <td class="p-1 text-left">${item.description}</td>
+                            <td class="p-1">${item.quantity}</td>
+                            <td class="p-1">${item.rate.toFixed(2)}</td>
+                            <td class="p-1">${taxableValue.toFixed(2)}</td>
+                        </tr>
+                    `;
+                    itemsBody.insertAdjacentHTML('beforeend', row);
+                });
+
+                const calculatedGST = totalInclusiveGST - totalTaxableValue;
+
+                const taxRow = `
+                    <tr class="text-center">
+                        <td class="border-0"></td>
+                        <td class="p-1 text-left font-bold">IGST Output ${(state.taxRate * 100).toFixed(0)}%</td>
+                        <td class="border-0"></td>
+                        <td class="border-0"></td>
+                        <td class="p-1">${calculatedGST.toFixed(2)}</td>
+                    </tr>
+                `;
+                itemsBody.insertAdjacentHTML('beforeend', taxRow);
+
+                document.getElementById('preview-total-amount').textContent = totalInclusiveGST.toFixed(2);
+                document.getElementById('preview-amount-in-words').textContent = toWords(totalInclusiveGST);
+            }
+
+            function renderForm() {
+                document.getElementById('companyName').value = state.company.name;
+                document.getElementById('companyAddress1').value = state.company.address1;
+                document.getElementById('companyAddress2').value = state.company.address2;
+                document.getElementById('companyCity').value = state.company.city;
+                document.getElementById('companyPincode').value = state.company.pincode;
+                document.getElementById('companyGstin').value = state.company.gstin;
+                document.getElementById('companyState').value = state.company.state;
+                
+                document.getElementById('buyerName').value = state.buyer.name;
+                document.getElementById('buyerMobile').value = state.buyer.mobile;
+
+                document.getElementById('invoiceNo').value = state.invoice.no;
+                document.getElementById('invoiceDate').value = state.invoice.date;
+                document.getElementById('orderNo').value = state.invoice.orderNo;
+                document.getElementById('orderDate').value = state.invoice.orderDate;
+
+                renderItems();
+            }
+            
+            function renderItems() {
+                itemsContainer.innerHTML = '';
+                state.items.forEach((item, index) => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'grid grid-cols-1 sm:grid-cols-7 gap-2 items-center border p-2 rounded-md';
+                    itemEl.innerHTML = `
+                        <div class="sm:col-span-3">
+                            <label class="text-xs font-medium text-gray-500">Description</label>
+                            <select data-index="${index}" data-field="description" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 text-sm">
+                                <option value="">Select Product</option>
+                                ${productOptions.map(option => `<option value="${option}" ${item.description === option ? 'selected' : ''}>${option}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                             <label class="text-xs font-medium text-gray-500">Qty</label>
+                            <input type="number" data-index="${index}" data-field="quantity" value="${item.quantity}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 text-sm">
+                        </div>
+                        <div class="sm:col-span-2">
+                             <label class="text-xs font-medium text-gray-500">Rate</label>
+                            <input type="number" data-index="${index}" data-field="rate" value="${item.rate}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm p-2 text-sm">
+                        </div>
+                        <div class="self-end">
+                            <button data-index="${index}" class="remove-item-btn w-full px-2 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm">Remove</button>
+                        </div>
+                    `;
+                    itemsContainer.appendChild(itemEl);
+                });
+            }
+
+            form.addEventListener('input', (e) => {
+                if(e.target.id.startsWith('company')) {
+                    const field = e.target.id.replace('company', '').toLowerCase();
+                    state.company[field] = e.target.value;
+                } else if(e.target.id.startsWith('buyer')) {
+                    const field = e.target.id.replace('buyer', '').toLowerCase();
+                    state.buyer[field] = e.target.value;
+                } else if(e.target.id.startsWith('invoice') || e.target.id.startsWith('order')) {
+                    const field = e.target.id.replace('invoice', '').replace('order','').toLowerCase();
+                    state.invoice[field] = e.target.value;
+                } else if (e.target.dataset.index) {
+                    const { index, field } = e.target.dataset;
+                    const value = e.target.type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
+                    state.items[index][field] = value;
+                }
+                updatePreview();
+            });
+
+            document.getElementById('add-item-btn').addEventListener('click', () => {
+                state.items.push({ description: '', quantity: 1, rate: 0 });
+                renderItems();
+                updatePreview();
+            });
+            
+            itemsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-item-btn')) {
+                    const index = e.target.dataset.index;
+                    state.items.splice(index, 1);
+                    renderItems();
+                    updatePreview();
+                }
+            });
+
+            document.getElementById('generate-pdf-btn').addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const invoice = document.getElementById('invoice-preview');
+                
+                html2canvas(invoice, { scale: 2 }).then(canvas => {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const canvasWidth = canvas.width;
+                    const canvasHeight = canvas.height;
+                    const ratio = canvasWidth / canvasHeight;
+                    const width = pdfWidth;
+                    const height = width / ratio;
+
+                    pdf.addImage(imgData, 'PNG', 0, 0, width, height > pdfHeight ? pdfHeight : height);
+                    pdf.save(`Invoice-${state.invoice.no}.pdf`);
+                });
+            });
+
+            renderForm();
+            updatePreview();
+        });
+    </script>
+</body>
+</html>
